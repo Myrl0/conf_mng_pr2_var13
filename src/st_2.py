@@ -1,51 +1,60 @@
-import urllib.request
-import tarfile
+"""Модуль второго этапа: извлечение зависимостей из Alpine APKINDEX."""
+import sys
 import io
+import tarfile
+import urllib.request
 from pathlib import Path
 
+# Импортируем класс из первого этапа (st_1.py)
+from st_1 import CLI
 
-def get_direct_dependencies(package_name: str, version: str, repo_url: str) -> list[str]:
-    # 1. Загружаем данные (из сети или с диска)
+# Константы для парсинга (защита от магических чисел)
+MIN_LINE_LEN = 3
+KEY_IDX = 0
+SEP_IDX = 1
+VAL_IDX = 2
+TAG_NAME = "P"
+TAG_VER = "V"
+TAG_DEPS = "D"
+
+
+def download_index(repo_url: str):
+    """Скачивает или загружает локальный APKINDEX.tar.gz."""
     if repo_url.startswith(("http://", "https://")):
         if not repo_url.endswith("APKINDEX.tar.gz"):
             repo_url = repo_url.rstrip("/") + "/APKINDEX.tar.gz"
+        print(f"[ИНФО] Скачивание индекса: {repo_url}")
         
-        print(f"[ИНФО] Скачивание индекса из: {repo_url} ...")
         try:
             with urllib.request.urlopen(repo_url) as response:
-                tar_bytes = io.BytesIO(response.read())
-        except Exception as e:
-            raise RuntimeError(f"Не удалось скачать индекс: {e}")
-    else:
-        print(f"[ИНФО] Чтение локального индекса: {repo_url} ...")
-        tar_bytes = Path(repo_url)
-        if not tar_bytes.exists():
-            raise FileNotFoundError(f"Локальный файл не найден: {repo_url}")
+                return io.BytesIO(response.read())
+        except Exception as error:
+            raise RuntimeError(f"Ошибка скачивания: {error}")
+    
+    print(f"[ИНФО] Чтение локального файла: {repo_url}")
+    tar_path = Path(repo_url)
+    if not tar_path.exists():
+        raise FileNotFoundError(f"Файл не найден: {repo_url}")
+    return tar_path
 
-    # 2. Открываем архив и ищем файл APKINDEX
+
+def extract_apkindex(tar_bytes):
+    """Извлекает текстовое содержимое файла APKINDEX из архива."""
     with tarfile.open(fileobj=tar_bytes, mode="r:gz") as tar:
-        apkindex_member = None
         for member in tar.getmembers():
-            if member.name == "APKINDEX" or member.name.endswith("/APKINDEX"):
-                apkindex_member = member
-                break
+            if member.name.endswith("APKINDEX"):
+                file_obj = tar.extractfile(member)
+                if file_obj:
+                    return file_obj.read().decode("utf-8")
+    raise ValueError("В архиве не найден файл APKINDEX")
 
-        if not apkindex_member:
-            raise ValueError("В архиве не найден файл APKINDEX")
 
-        f = tar.extractfile(apkindex_member)
-        if not f:
-            raise ValueError("Не удалось извлечь APKINDEX")
-        
-        # Декодируем и разбиваем на строки (учитывая и \n, и \r\n)
-        content = f.read().decode("utf-8")
-        lines = content.splitlines()
-
-    # 3. Парсим блоки построчно (самый надежный способ)
+def parse_blocks(content: str):
+    """Разбирает текст APKINDEX на список словарей (пакетов)."""
     packages = []
     current_pkg = {}
     
-    for line in lines:
+    for line in content.splitlines():
         line = line.strip()
         if not line:
             if current_pkg:
@@ -53,32 +62,74 @@ def get_direct_dependencies(package_name: str, version: str, repo_url: str) -> l
                 current_pkg = {}
             continue
         
-        if len(line) >= 3 and line[1] == ":":
-            key = line[0]
-            value = line[2:].strip()
+        if len(line) >= MIN_LINE_LEN and line[SEP_IDX] == ":":
+            key = line[KEY_IDX]
+            value = line[VAL_IDX:].strip()
             current_pkg[key] = value
             
-    if current_pkg:  # Добавляем последний пакет, если файл не кончается пустой строкой
+    if current_pkg:
         packages.append(current_pkg)
+    return packages
 
-    print(f"[ИНФО] Всего пакетов в индексе: {len(packages)}")
 
-    # 4. Ищем нужный пакет
+def find_dependencies(packages: list, name: str, version: str):
+    """Ищет пакет по имени и версии, возвращает его зависимости."""
     available_versions = []
+    
     for pkg in packages:
-        if pkg.get("P") == package_name:
-            available_versions.append(pkg.get("V"))
-            if pkg.get("V") == version:
-                deps_str = pkg.get("D", "")
-                if not deps_str:
-                    return []
-                return deps_str.split()
+        if pkg.get(TAG_NAME) == name:
+            available_versions.append(pkg.get(TAG_VER))
+            if pkg.get(TAG_VER) == version:
+                deps_str = pkg.get(TAG_DEPS, "")
+                return deps_str.split() if deps_str else []
 
-    # 5. Если пакет не найден или версия не совпала
     if not available_versions:
-        raise ValueError(f"Пакет '{package_name}' вообще не найден в индексе.")
-    else:
-        raise ValueError(
-            f"Пакет '{package_name}' найден, но версии '{version}' нет.\n"
-            f"Доступные версии: {', '.join(available_versions)}"
-        )
+        raise ValueError(f"Пакет '{name}' не найден.")
+    raise ValueError(
+        f"Версия '{version}' не найдена. Доступны: "
+        f"{', '.join(available_versions)}"
+    )
+
+
+def get_direct_dependencies(name: str, version: str, repo_url: str):
+    """Получает список прямых зависимостей."""
+    tar_bytes = download_index(repo_url)
+    content = extract_apkindex(tar_bytes)
+    packages = parse_blocks(content)
+    return find_dependencies(packages, name, version)
+
+
+def main():
+    """Точка входа для второго этапа."""
+    # Используем класс из st_1.py для загрузки конфига
+    cli = CLI(config_path="src/csv_config.csv")
+    
+    try:
+        cli.validate_params()
+    except Exception as err:
+        print(f"\n[ОШИБКА КОНФИГА] {err}", file=sys.stderr)
+        sys.exit(2)
+        
+    print("--- Этап 2: Сбор данных ---")
+    
+    try:
+        pkg_name = cli.params.get('package_name')
+        pkg_ver = cli.params.get('package_version')
+        repo = cli.params.get('repo')
+        
+        deps = get_direct_dependencies(pkg_name, pkg_ver, repo)
+        
+        print(f"\nПрямые зависимости пакета '{pkg_name}' ({pkg_ver}):")
+        if not deps:
+            print("  (нет зависимостей)")
+        else:
+            for dep in deps:
+                print(f"  - {dep}")
+                
+    except Exception as err:
+        print(f"\n[ОШИБКА ДАННЫХ] {err}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

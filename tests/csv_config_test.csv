@@ -1,0 +1,6 @@
+parameter,value
+package_name,A
+repo,tests/test_repo_tree.json
+repo_mode,local
+package_version,1.0.0
+output_image,graph.png

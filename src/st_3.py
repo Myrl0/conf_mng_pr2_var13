@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 
 from st_1 import CLI
-# Импортируем функции скачивания и парсинга из второго этапа
 from st_2 import download_index, extract_apkindex, parse_blocks
 
 
@@ -43,20 +42,16 @@ def build_transitive_graph(start_node: str, graph: dict) -> dict:
     stack = [start_node]
 
     while stack:
-        # Извлекаем элемент из стека (LIFO - принцип DFS)
         current = stack.pop()
         
-        # Защита от циклических зависимостей
         if current in visited:
             continue
         
         visited.add(current)
         
-        # Берем прямые зависимости текущего узла
         deps = graph.get(current, [])
         transitive_graph[current] = deps
 
-        # Добавляем непосещенные зависимости в стек
         for dep in deps:
             if dep not in visited:
                 stack.append(dep)

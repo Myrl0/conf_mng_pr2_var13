@@ -1,0 +1,6 @@
+parameter,value
+package_name,curl
+repo,https://dl-cdn.alpinelinux.org/alpine/v3.19/main/x86_64
+repo_mode,remote
+package_version,8.5.0-r0
+output_image,curl_graph.svg

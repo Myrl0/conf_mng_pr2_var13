@@ -1,0 +1,12 @@
+@startuml
+skinparam linetype ortho
+rectangle "curl" as n0
+rectangle "libcurl=8.14.1-r2" as n1
+rectangle "so:libc.musl-x86_64.so.1" as n2
+rectangle "so:libcurl.so.4" as n3
+rectangle "so:libz.so.1" as n4
+n0 --> n1
+n0 --> n2
+n0 --> n3
+n0 --> n4
+@enduml

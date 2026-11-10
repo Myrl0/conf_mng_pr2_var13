@@ -4,9 +4,8 @@ import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
-# Константы (защита от магических чисел и строк)
 VALID_MODES = {"remote", "local"}
-VALID_EXTS = {".png", ".svg", ".pdf", ".jpg"}
+VALID_EXTS = {".png", ".svg"}
 
 
 class CLI:
@@ -114,15 +113,12 @@ class CLI:
 
 
 if __name__ == "__main__":
-    # Запуск Этапа 1: Чтение конфига и валидация
     cli = CLI(config_path="src/csv_config.csv")
     
     try:
         cli.validate_params()
     except Exception as err:
-        # Перехватываем ошибки валидации и выходим с кодом 2
         print(f"\n[ОШИБКА КОНФИГА] {err}", file=sys.stderr)
         sys.exit(2)
         
-    # Требование 3: Вывод параметров при запуске
     cli.print_params()

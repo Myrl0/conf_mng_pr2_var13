@@ -4,11 +4,8 @@ import io
 import tarfile
 import urllib.request
 from pathlib import Path
-
-# Импортируем класс из первого этапа (st_1.py)
 from st_1 import CLI
 
-# Константы для парсинга (защита от магических чисел)
 MIN_LINE_LEN = 3
 KEY_IDX = 0
 SEP_IDX = 1
@@ -101,7 +98,6 @@ def get_direct_dependencies(name: str, version: str, repo_url: str):
 
 def main():
     """Точка входа для второго этапа."""
-    # Используем класс из st_1.py для загрузки конфига
     cli = CLI(config_path="src/csv_config.csv")
     
     try:

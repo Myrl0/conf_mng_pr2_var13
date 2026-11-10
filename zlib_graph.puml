@@ -1,0 +1,6 @@
+@startuml
+skinparam linetype ortho
+rectangle "zlib" as n0
+rectangle "so:libc.musl-x86_64.so.1" as n1
+n0 --> n1
+@enduml

@@ -1,0 +1,4 @@
+@startuml
+skinparam linetype ortho
+rectangle "musl" as n0
+@enduml

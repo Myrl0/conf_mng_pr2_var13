@@ -84,7 +84,6 @@ def main():
     print("--- Этап 3: Построение графа (DFS) ---")
     
     try:
-        # 1. Загружаем граф в зависимости от режима
         if mode == "local":
             print(f"[ИНФО] Режим тестирования. Файл: {repo}")
             graph = load_test_graph(repo)
@@ -92,11 +91,9 @@ def main():
             print(f"[ИНФО] Режим remote. Скачивание Alpine: {repo}")
             graph = build_alpine_graph(repo)
 
-        # 2. Запускаем DFS
         print(f"[ИНФО] Запуск DFS для пакета: {pkg_name}")
         trans_graph = build_transitive_graph(pkg_name, graph)
         
-        # 3. Выводим результат
         print_graph(trans_graph)
         
     except Exception as err:

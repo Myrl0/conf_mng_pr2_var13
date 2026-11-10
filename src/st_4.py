@@ -48,7 +48,7 @@ def main():
             print(f"[ИНФО] Режим remote. Скачивание Alpine: {repo}")
             graph = build_alpine_graph(repo)
 
-        print(f"[ИНФО] Инвертирование графа для поиска обратных зависимостей...")
+        print(f"[ИНФО] Инвертирование графа для поиска обратных зависимостей")
         inverted_graph = invert_graph(graph)
         
         if pkg_name not in inverted_graph:

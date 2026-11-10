@@ -1,3 +1,27 @@
-.idea/
+# Python bytecode
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
 .venv/
-src/__pycache__
+venv/
+env/
+ENV/
+
+# IDE settings
+.idea/
+.vscode/
+*.iml
+
+# macOS system files
+.DS_Store
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Generated files (опционально: если не хочешь хранить картинки в Git)
+# *.svg
+# *.puml

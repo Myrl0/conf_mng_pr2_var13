@@ -23,11 +23,11 @@ class CLI:
         try:
             with open(self.config_path, 'r', encoding='utf-8') as file:
                 reader = csv.DictReader(file)
-                if not reader.fieldnames or "parameter" not in reader.fieldnames:
-                    raise KeyError("В CSV нет колонки 'parameter'")
+                if not reader.fieldnames or "paramet" not in reader.fieldnames:
+                    raise KeyError("В CSV нет колонки 'paramet'")
                 
                 for row in reader:
-                    key = row['parameter'].strip()
+                    key = row['paramet'].strip()
                     val = row['value'].strip()
                     params[key] = val
                     
